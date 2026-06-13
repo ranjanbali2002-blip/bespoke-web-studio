@@ -3,16 +3,23 @@
 // GET   /api/enquiry?key=...   -> list all enquiries (admin only, password-gated)
 const { createPool } = require('@vercel/postgres');
 
-const pool = createPool({
-  connectionString:
+// Lazily create the pool so a missing connection string yields a clean
+// error response instead of crashing the function at import time.
+let pool;
+function getPool() {
+  if (pool) return pool;
+  const connectionString =
     process.env.POSTGRES_URL ||
     process.env.POSTGRES_PRISMA_URL ||
-    process.env.DATABASE_URL,
-});
+    process.env.DATABASE_URL;
+  if (!connectionString) return null;
+  pool = createPool({ connectionString });
+  return pool;
+}
 
 // Lazily create the table once per warm instance.
 let ready;
-function ensureTable() {
+function ensureTable(pool) {
   if (!ready) {
     ready = pool.query(`
       CREATE TABLE IF NOT EXISTS enquiries (
@@ -42,12 +49,13 @@ module.exports = async (req, res) => {
   res.setHeader('Content-Type', 'application/json');
 
   try {
-    if (!pool.options || !(process.env.POSTGRES_URL || process.env.POSTGRES_PRISMA_URL || process.env.DATABASE_URL)) {
-      res.status(500).json({ error: 'Database is not configured yet.' });
+    const pool = getPool();
+    if (!pool) {
+      res.status(503).json({ error: 'Database is not configured yet.' });
       return;
     }
 
-    await ensureTable();
+    await ensureTable(pool);
 
     if (req.method === 'POST') {
       const { name, brand, email, budget, vision } = readBody(req);
