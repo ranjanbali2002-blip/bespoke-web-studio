@@ -89,6 +89,23 @@ module.exports = async (req, res) => {
       return;
     }
 
+    if (req.method === 'DELETE') {
+      const auth = req.headers['authorization'] || '';
+      const token = auth.replace(/^Bearer\s+/i, '') || (req.query && req.query.key) || '';
+      if (!process.env.ADMIN_PASSWORD || token !== process.env.ADMIN_PASSWORD) {
+        res.status(401).json({ error: 'Unauthorized' });
+        return;
+      }
+      const id = parseInt((req.query && req.query.id) || '', 10);
+      if (!id) {
+        res.status(400).json({ error: 'A valid id is required.' });
+        return;
+      }
+      await pool.query('DELETE FROM enquiries WHERE id = $1', [id]);
+      res.status(200).json({ ok: true });
+      return;
+    }
+
     res.status(405).json({ error: 'Method not allowed' });
   } catch (e) {
     console.error('enquiry api error:', e);

@@ -64,6 +64,9 @@ header.bar .count{font-family:var(--serif);font-style:italic;color:var(--gold);f
 .card .budget{display:inline-block;font-size:10px;letter-spacing:.2em;border:1px solid var(--hairline);
   border-radius:99px;padding:5px 12px;color:var(--ivory-dim);margin-top:4px}
 .card .vision{color:var(--ivory-dim);font-size:13px;border-top:1px solid var(--hairline);margin-top:18px;padding-top:16px;white-space:pre-wrap}
+.card .del{margin-top:18px;background:none;border:none;color:var(--ivory-faint);font-family:var(--sans);
+  font-size:9px;letter-spacing:.3em;text-transform:uppercase;cursor:pointer;transition:color .4s;padding:0}
+.card .del:hover{color:#c98}
 .empty,.loading{text-align:center;color:var(--ivory-dim);padding:80px 0;font-family:var(--serif);font-style:italic;font-size:22px}
 </style>
 </head>
@@ -126,7 +129,19 @@ async function load(key){
       <div class="row"><span class="k">Email</span><span class="v"><a href="mailto:${esc(e.email)}">${esc(e.email)}</a></span></div>
       ${e.budget?`<div class="row"><span class="k">Budget</span><span class="v"><span class="budget">${esc(e.budget)}</span></span></div>`:''}
       ${e.vision?`<div class="vision">${esc(e.vision)}</div>`:''}
+      <button class="del" data-id="${e.id}">Remove</button>
     </article>`).join('')+'</div>';
+  list.querySelectorAll('.del').forEach(b=>b.addEventListener('click',()=>remove(b.dataset.id)));
+}
+
+async function remove(id){
+  if(!confirm('Remove this enquiry permanently?'))return;
+  const key=localStorage.getItem(KEY);
+  try{
+    const r=await fetch('/api/enquiry?id='+encodeURIComponent(id),{method:'DELETE',headers:{'Authorization':'Bearer '+key}});
+    if(!r.ok)throw new Error();
+    load(key);
+  }catch{alert('Could not remove that enquiry.')}
 }
 
 function showDash(){gate.style.display='none';dash.classList.add('show')}
