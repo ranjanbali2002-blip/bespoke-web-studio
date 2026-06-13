@@ -1,0 +1,9 @@
+{
+  "name": "bespoke-web-studio",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Ranjan Bali — Bespoke Web Studio",
+  "dependencies": {
+    "@vercel/postgres": "^0.10.0"
+  }
+}
